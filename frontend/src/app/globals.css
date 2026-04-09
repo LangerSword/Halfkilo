@@ -1741,7 +1741,302 @@ h3 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* ═══════════════════════
+   RECRUIT SCREEN
+   ═══════════════════════ */
+.recruit-v2-screen {
+  max-width: 1260px;
+  padding-top: 84px;
+  padding-bottom: 92px;
+}
+
+.recruit-v2-shell {
+  display: grid;
+  gap: 16px;
+  background:
+    linear-gradient(180deg, rgba(8, 10, 18, 0.98), rgba(6, 8, 14, 0.98)),
+    radial-gradient(circle at 84% 14%, rgba(255, 76, 182, 0.1), transparent 24%),
+    radial-gradient(circle at 16% 82%, rgba(58, 186, 255, 0.12), transparent 28%);
+  border-color: #294567;
+}
+
+.recruit-v2-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.recruit-v2-kicker {
+  font-family: "Press Start 2P", cursive;
+  font-size: 8px;
+  color: #f9b95e;
+  letter-spacing: 0.9px;
+  margin-bottom: 8px;
+}
+
+.recruit-v2-title {
+  font-family: "Press Start 2P", cursive;
+  font-size: clamp(16px, 2vw, 24px);
+  color: #d7f1ff;
+  text-shadow: 0 0 10px rgba(94, 200, 255, 0.3);
+}
+
+.recruit-v2-subtitle {
+  max-width: 430px;
+  text-align: right;
+  font-size: 20px;
+  color: #8ca5c7;
+}
+
+.recruit-v2-stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.recruit-v2-portrait-panel {
+  min-height: 520px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 14px;
+  background:
+    linear-gradient(180deg, rgba(9, 14, 24, 0.98), rgba(5, 7, 13, 0.98));
+}
+
+.recruit-v2-portrait-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 16%, rgba(94, 200, 255, 0.18), transparent 36%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 4px);
+  border: 1px solid rgba(94, 200, 255, 0.25);
+}
+
+.recruit-v2-platform {
+  position: absolute;
+  bottom: 36px;
+  width: 64%;
+  height: 34px;
+  border: 1px solid rgba(255, 76, 182, 0.6);
+  background: radial-gradient(circle, rgba(255, 76, 182, 0.18), transparent 65%);
+  filter: blur(1px);
+}
+
+.recruit-v2-portrait-sprite {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 42px;
+  filter:
+    drop-shadow(0 0 16px rgba(94, 200, 255, 0.3))
+    drop-shadow(0 0 22px rgba(255, 76, 182, 0.24));
+}
+
+.recruit-v2-stage-readout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  padding: 8px;
+  border: 1px solid rgba(94, 200, 255, 0.28);
+  background: rgba(4, 8, 16, 0.82);
+}
+
+.recruit-v2-stage-readout span {
+  font-family: "Press Start 2P", cursive;
+  font-size: 7px;
+  color: #7890ad;
+}
+
+.recruit-v2-stage-readout strong {
+  font-size: 18px;
+  color: #7dd4ff;
+  text-align: right;
+}
+
+.recruit-v2-info-panel {
+  display: grid;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(12, 16, 27, 0.98), rgba(7, 10, 18, 0.98));
+}
+
+.recruit-v2-name-block h2 {
+  font-family: "Press Start 2P", cursive;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #d9f3ff;
+  margin-bottom: 7px;
+}
+
+.recruit-v2-codename {
+  display: inline-block;
+  font-family: "Press Start 2P", cursive;
+  font-size: 8px;
+  color: #ff7bd2;
+  border: 1px solid rgba(255, 123, 210, 0.5);
+  background: rgba(255, 123, 210, 0.08);
+  padding: 4px 8px;
+}
+
+.recruit-v2-stat-list {
+  display: grid;
+  gap: 8px;
+}
+
+.recruit-v2-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(94, 200, 255, 0.24);
+  background: rgba(3, 7, 14, 0.76);
+}
+
+.recruit-v2-stat-row span {
+  font-family: "Press Start 2P", cursive;
+  font-size: 7px;
+  color: #6f88a6;
+}
+
+.recruit-v2-stat-row strong {
+  text-align: right;
+  font-size: 19px;
+  color: #56daff;
+}
+
+.recruit-v2-tagline {
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 123, 210, 0.35);
+  background: rgba(12, 7, 18, 0.7);
+  color: #bfd5eb;
+  font-size: 20px;
+}
+
+.recruit-v2-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.recruit-v2-btn {
+  width: 100%;
+  font-size: 9px;
+  color: #f4f9ff;
+  background: #1f0f29;
+  border-top-color: #ff7bd2;
+  border-left-color: #ff7bd2;
+  border-right-color: #543067;
+  border-bottom-color: #543067;
+  text-shadow: 0 0 8px rgba(255, 123, 210, 0.35);
+}
+
+.recruit-v2-btn:hover {
+  background: #2f1840;
+  box-shadow: 0 2px 0 #4a2c5f, 0 0 16px rgba(255, 123, 210, 0.35);
+}
+
+.recruit-v2-roster-shell {
+  display: grid;
+  gap: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 11, 20, 0.98), rgba(5, 7, 12, 0.98));
+}
+
+.recruit-v2-roster-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.recruit-v2-roster-head span {
+  font-family: "Press Start 2P", cursive;
+  font-size: 7px;
+  color: #7dd4ff;
+}
+
+.recruit-v2-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 302px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.recruit-v2-thumb {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  text-align: center;
+  padding: 10px 8px;
+  background: rgba(7, 11, 20, 0.85);
+  border: 2px solid #243a56;
+  border-top-color: #37567a;
+  border-left-color: #37567a;
+  border-right-color: #162437;
+  border-bottom-color: #162437;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.recruit-v2-thumb:hover {
+  transform: translateY(-2px);
+  border-color: #56daff;
+  box-shadow: 0 0 14px rgba(86, 218, 255, 0.18);
+}
+
+.recruit-v2-thumb.selected {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #ff7bd2;
+  box-shadow:
+    0 0 0 1px rgba(255, 123, 210, 0.46),
+    0 0 18px rgba(255, 123, 210, 0.3),
+    inset 0 0 16px rgba(86, 218, 255, 0.14);
+  background: linear-gradient(180deg, rgba(26, 13, 34, 0.95), rgba(10, 14, 25, 0.95));
+}
+
+.recruit-v2-thumb-art {
+  border: 1px solid rgba(86, 218, 255, 0.28);
+  background-color: rgba(5, 8, 14, 0.9);
+}
+
+.recruit-v2-thumb-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.recruit-v2-thumb-copy strong {
+  font-family: "Press Start 2P", cursive;
+  font-size: 7px;
+  line-height: 1.45;
+  color: #def4ff;
+}
+
+.recruit-v2-thumb-copy span {
+  font-family: "Press Start 2P", cursive;
+  font-size: 7px;
+  color: #f9b95e;
+}
+
 @media (max-width: 1280px) {
+  .recruit-v2-stage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recruit-v2-subtitle {
+    text-align: left;
+  }
+
+  .recruit-v2-roster-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .avatar-builder-grid {
     grid-template-columns: 1fr;
   }
@@ -1757,6 +2052,28 @@ h3 {
 }
 
 @media (max-width: 860px) {
+  .recruit-v2-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recruit-v2-roster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recruit-v2-stat-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recruit-v2-stat-row strong {
+    text-align: left;
+  }
+
+  .recruit-v2-stage-readout strong {
+    text-align: left;
+  }
+
   .avatar-roster-grid,
   .avatar-chip-grid,
   .avatar-chip-grid.compact,
@@ -1766,6 +2083,25 @@ h3 {
 
   .avatar-roster-card {
     min-height: 80px;
+  }
+}
+
+@media (max-width: 640px) {
+  .recruit-v2-screen {
+    padding: 76px 12px 96px;
+  }
+
+  .recruit-v2-portrait-panel {
+    min-height: 360px;
+  }
+
+  .recruit-v2-roster-grid {
+    grid-template-columns: 1fr;
+    max-height: 280px;
+  }
+
+  .recruit-v2-portrait-sprite {
+    margin-bottom: 32px;
   }
 }
 

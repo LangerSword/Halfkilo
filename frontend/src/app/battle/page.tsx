@@ -9,15 +9,21 @@ import { AgentNFTABI, GameCoreABI } from "@/config/abis";
 const PLAYER_AGENT_ID = BigInt(1);
 const AI_AGENT_ID = BigInt(2);
 const ONLINE_OPPONENT_AGENT_ID = BigInt(3);
-const LOOKBACK_LIMIT = 40;
+const LOOKBACK_LIMIT = 240;
 
-const CLASS_TO_ATLAS: Record<string, string> = {
-    Berserker: "socrates",
-    Wizard: "turing",
-    Rogue: "ada",
-    Paladin: "sophia",
-    Ranger: "descartes",
-    Necromancer: "plato",
+const NAME_TO_ATLAS: Record<string, string> = {
+    "vex rail": "sophia",
+    "kaze-9": "ada",
+    "mira static": "turing",
+    "brax ironjaw": "socrates",
+    "nyx fang": "aristotle",
+    "rune halo": "descartes",
+    "tanka-0": "plato",
+    "lexi quill": "leibniz",
+    "ordo blacksite": "dennett",
+    "mother rust": "paul",
+    "chimera jax": "searle",
+    "saint volt": "chomsky",
 };
 
 export default function BattlePage() {
@@ -29,6 +35,25 @@ export default function BattlePage() {
     const { data: battleTxHash, writeContract: doBattle, isPending: isBattlePending } = useWriteContract();
 
     const { isLoading: isBattleConfirming, isSuccess: isBattleSuccess } = useWaitForTransactionReceipt({ hash: battleTxHash });
+
+    const { data: hasCharacter } = useReadContract({
+        address: CONTRACTS.gameCore,
+        abi: GameCoreABI,
+        functionName: "hasCharacter",
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    });
+
+    const { data: mappedCharacterId } = useReadContract({
+        address: CONTRACTS.gameCore,
+        abi: GameCoreABI,
+        functionName: "characterOf",
+        args: address ? [address] : undefined,
+        query: { enabled: !!address },
+    });
+
+    const hasCharacterBool = Boolean(hasCharacter as boolean | undefined);
+    const mappedCharacterIdValue = (mappedCharacterId as bigint | undefined) ?? BigInt(0);
 
     const { data: totalSupply } = useReadContract({
         address: CONTRACTS.agentNFT,
@@ -60,6 +85,10 @@ export default function BattlePage() {
     });
 
     const ownedAgentIds = useMemo(() => {
+        if (hasCharacterBool && mappedCharacterIdValue > BigInt(0)) {
+            return [mappedCharacterIdValue];
+        }
+
         if (!address || !ownerChecks?.length) return [] as bigint[];
         const normalized = address.toLowerCase();
 
@@ -67,7 +96,7 @@ export default function BattlePage() {
             const row = ownerChecks[index] as { status?: string; result?: unknown } | undefined;
             return row?.status === "success" && typeof row.result === "string" && row.result.toLowerCase() === normalized;
         });
-    }, [address, candidateAgentIds, ownerChecks]);
+    }, [address, candidateAgentIds, ownerChecks, hasCharacterBool, mappedCharacterIdValue]);
 
     useEffect(() => {
         if (!ownedAgentIds.length) return;
@@ -86,8 +115,8 @@ export default function BattlePage() {
     });
 
     const activeAgentName = (activeAgentData?.[0] as string | undefined) || `Agent ${activeAgentId.toString()}`;
-    const activeAgentClass = (activeAgentData?.[1] as string | undefined) || "Paladin";
-    const activeAgentAtlas = CLASS_TO_ATLAS[activeAgentClass] || "sophia";
+    const activeAgentLevel = (activeAgentData?.[1] as bigint | undefined) || BigInt(1);
+    const activeAgentAtlas = NAME_TO_ATLAS[activeAgentName.toLowerCase()] || "sophia";
 
     useEffect(() => {
         const handleBattleEnd = () => setIsBattling(false);
@@ -179,7 +208,7 @@ export default function BattlePage() {
                                         )}
                                     </select>
                                     <p style={{ color: "var(--text-dim)", fontSize: 14, marginTop: 6 }}>
-                                        Active: {activeAgentName} ({activeAgentClass})
+                                        Active: {activeAgentName} (LVL {activeAgentLevel.toString()})
                                     </p>
                                 </div>
 

@@ -1,11 +1,13 @@
 export const GameCoreABI = [
     { type: "constructor", inputs: [{ name: "_agentNFT", type: "address" }, { name: "_petNFT", type: "address" }, { name: "_itemNFT", type: "address" }, { name: "_reputationRegistry", type: "address" }, { name: "_identityRegistry", type: "address" }, { name: "_tbaRegistry", type: "address" }] },
-    { type: "function", name: "registerAgent", inputs: [{ name: "to", type: "address" }, { name: "name", type: "string" }, { name: "class_", type: "string" }, { name: "metadataURI", type: "string" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable" },
+    { type: "function", name: "registerAgent", inputs: [{ name: "to", type: "address" }, { name: "name", type: "string" }, { name: "metadataURI", type: "string" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable" },
     { type: "function", name: "registerAndAssignPet", inputs: [{ name: "agentId", type: "uint256" }, { name: "petName", type: "string" }, { name: "personality", type: "uint8" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable" },
     { type: "function", name: "updatePetMood", inputs: [{ name: "petId", type: "uint256" }, { name: "newMood", type: "uint8" }], outputs: [], stateMutability: "nonpayable" },
     { type: "function", name: "battle", inputs: [{ name: "agentA", type: "uint256" }, { name: "agentB", type: "uint256" }], outputs: [{ name: "winner", type: "uint256" }, { name: "lootId", type: "uint256" }], stateMutability: "nonpayable" },
     { type: "function", name: "registered", inputs: [{ name: "", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
     { type: "function", name: "assignedPet", inputs: [{ name: "", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+    { type: "function", name: "hasCharacter", inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
+    { type: "function", name: "characterOf", inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
     { type: "event", name: "AgentRegistered", inputs: [{ name: "agentId", type: "uint256", indexed: true }, { name: "owner", type: "address", indexed: true }] },
     { type: "event", name: "PetAssigned", inputs: [{ name: "agentId", type: "uint256", indexed: true }, { name: "petId", type: "uint256", indexed: true }] },
     { type: "event", name: "BattleResolved", inputs: [{ name: "agentA", type: "uint256", indexed: true }, { name: "agentB", type: "uint256", indexed: true }, { name: "winner", type: "uint256" }, { name: "lootId", type: "uint256" }] },
@@ -13,7 +15,7 @@ export const GameCoreABI = [
 ] as const;
 
 export const AgentNFTABI = [
-    { type: "function", name: "getAgent", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "name", type: "string" }, { name: "class_", type: "string" }], stateMutability: "view" },
+    { type: "function", name: "getAgent", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "name", type: "string" }, { name: "level", type: "uint256" }], stateMutability: "view" },
     { type: "function", name: "ownerOf", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
     { type: "function", name: "totalSupply", inputs: [], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
     { type: "function", name: "balanceOf", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },

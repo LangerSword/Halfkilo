@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { CONTRACTS } from "@/config/contracts";
@@ -9,83 +9,182 @@ import { GameCoreABI } from "@/config/abis";
 type CharacterPreset = {
   id: string;
   name: string;
-  style: string;
-  lore: string;
-  defaultClass: string;
+  codename: string;
+  classTier: string;
+  origin: string;
+  fightingStyle: string;
+  traits: string[];
+  mood: {
+    label: string;
+    icon: string;
+    color: string;
+  };
+  tagline: string;
 };
-
-const CLASSES = ["Berserker", "Wizard", "Rogue", "Paladin", "Ranger", "Necromancer"];
-const OUTFITS = ["Arena Prime", "Neo Raider", "Runic Guard", "Street Hunter", "Void Knight"];
-const VOICES = ["Calm", "Aggressive", "Mysterious", "Cheerful"];
 
 const CHARACTER_PRESETS: CharacterPreset[] = [
   {
     id: "sophia",
-    name: "Sophia",
-    style: "Arcane Vanguard",
-    lore: "Frontline caster with durable pressure and balanced tempo.",
-    defaultClass: "Paladin",
+    name: "Vex Rail",
+    codename: "CHAINBREAK",
+    classTier: "BRAWLER",
+    origin: "Dockside Grid-17",
+    fightingStyle: "Street Brawler",
+    traits: ["Reckless", "Loyal", "Trash-Talker"],
+    mood: { label: "Amped", icon: "⚡", color: "#4ef0d0" },
+    tagline: "Breaks guard with raw pressure and laughs through incoming fire.",
   },
   {
     id: "ada",
-    name: "Ada",
-    style: "Data Duelist",
-    lore: "Fast tactical fighter with precise setup control.",
-    defaultClass: "Rogue",
+    name: "Kaze-9",
+    codename: "NULL SHADOW",
+    classTier: "ASSASSIN",
+    origin: "Neon Temple District",
+    fightingStyle: "Cyber Ninjutsu",
+    traits: ["Disciplined", "Silent", "Precise"],
+    mood: { label: "Focused", icon: "◉", color: "#6ea8ff" },
+    tagline: "Vanishing dash slashes and surgical punishes from blind angles.",
   },
   {
     id: "turing",
-    name: "Turing",
-    style: "Mind Hacker",
-    lore: "Reads enemy patterns and punishes bad spacing.",
-    defaultClass: "Wizard",
+    name: "Mira Static",
+    codename: "GLITCH WITCH",
+    classTier: "TACTICIAN",
+    origin: "Undernet Node V",
+    fightingStyle: "Trap Hacker",
+    traits: ["Sarcastic", "Brilliant", "Guarded"],
+    mood: { label: "Scheming", icon: "⌁", color: "#ff6bd6" },
+    tagline: "Builds trap webs that collapse whole teams in one bad rotation.",
   },
   {
     id: "socrates",
-    name: "Socrates",
-    style: "Arena Mentor",
-    lore: "Counter-focused bruiser built for close combat reads.",
-    defaultClass: "Berserker",
+    name: "Brax Ironjaw",
+    codename: "WALLBREAKER",
+    classTier: "TANK",
+    origin: "Old Barrens Front",
+    fightingStyle: "Power Grappling",
+    traits: ["Stoic", "Tactical", "Relentless"],
+    mood: { label: "Steady", icon: "▣", color: "#f9b95e" },
+    tagline: "Punishes over-extensions with crushing holds and armored slams.",
   },
   {
     id: "aristotle",
-    name: "Aristotle",
-    style: "Order Sentinel",
-    lore: "Stable defender with clean engagement windows.",
-    defaultClass: "Paladin",
+    name: "Nyx Fang",
+    codename: "MOON CLAW",
+    classTier: "RUSH",
+    origin: "Ash Alley Warrens",
+    fightingStyle: "Beastkin Rushdown",
+    traits: ["Predatory", "Playful", "Hotheaded"],
+    mood: { label: "Hunting", icon: "✦", color: "#fd6f7a" },
+    tagline: "Unleashes bleed chains and savage corner pressure on instinct.",
   },
   {
     id: "descartes",
-    name: "Descartes",
-    style: "Precision Analyst",
-    lore: "Spacing specialist with punishing lane control.",
-    defaultClass: "Ranger",
+    name: "Rune Halo",
+    codename: "HEX SABER",
+    classTier: "BURST",
+    origin: "Rift Chapel Sublevel",
+    fightingStyle: "Demonic Burstblade",
+    traits: ["Prideful", "Charismatic", "Volatile"],
+    mood: { label: "Smoldering", icon: "✹", color: "#b08cff" },
+    tagline: "Sacrifices stability for explosive rune casts and lethal bursts.",
   },
   {
     id: "plato",
-    name: "Plato",
-    style: "Formation Architect",
-    lore: "High strategy agent that excels in long exchanges.",
-    defaultClass: "Necromancer",
+    name: "Tanka-0",
+    codename: "IRON SAINT",
+    classTier: "JUGGERNAUT",
+    origin: "Scrapyard Basilica",
+    fightingStyle: "Juggernaut Protocol",
+    traits: ["Literal", "Protective", "Unshakable"],
+    mood: { label: "Shielding", icon: "⛨", color: "#4ef0d0" },
+    tagline: "Absorbs punishment, then deletes lanes with heavy denial patterns.",
   },
   {
     id: "leibniz",
-    name: "Leibniz",
-    style: "Support Computor",
-    lore: "Builds advantages through buffs and rotations.",
-    defaultClass: "Wizard",
+    name: "Lexi Quill",
+    codename: "RAIL SPARK",
+    classTier: "SKIRMISH",
+    origin: "Transit Arcades",
+    fightingStyle: "Skater Hit-and-Run",
+    traits: ["Defiant", "Optimistic", "Chaotic"],
+    mood: { label: "Hyper", icon: "✧", color: "#6ea8ff" },
+    tagline: "Dances around heavy fighters and chips them apart with speed tech.",
+  },
+  {
+    id: "dennett",
+    name: "Ordo Blacksite",
+    codename: "DEBT COLLECTOR",
+    classTier: "HUNTER",
+    origin: "Corporate Crown Ring",
+    fightingStyle: "Bounty Punisher",
+    traits: ["Cold", "Methodical", "Contract-Bound"],
+    mood: { label: "Locked-In", icon: "◎", color: "#f9b95e" },
+    tagline: "Finds one opening, marks the target, then never lets go.",
+  },
+  {
+    id: "paul",
+    name: "Mother Rust",
+    codename: "WRENCH QUEEN",
+    classTier: "DISRUPTOR",
+    origin: "Foundry Borough",
+    fightingStyle: "Improvised Disable",
+    traits: ["Blunt", "Protective", "Resourceful"],
+    mood: { label: "Gritty", icon: "⌬", color: "#fd6f7a" },
+    tagline: "Turns scrap, sparks, and battlefield junk into brutal control tools.",
+  },
+  {
+    id: "searle",
+    name: "Chimera Jax",
+    codename: "SPLIT VEIN",
+    classTier: "HYBRID",
+    origin: "Bioforge Fringe",
+    fightingStyle: "Stance Shifter",
+    traits: ["Unpredictable", "Poetic", "Feral"],
+    mood: { label: "Unstable", icon: "☍", color: "#ff6bd6" },
+    tagline: "Swaps forms mid-string to scramble reads and crack defense.",
+  },
+  {
+    id: "chomsky",
+    name: "Saint Volt",
+    codename: "ARC PILGRIM",
+    classTier: "MONK",
+    origin: "Storm Shrine Orbit",
+    fightingStyle: "Shock Monk",
+    traits: ["Calm", "Conflicted", "Merciless"],
+    mood: { label: "Charged", icon: "⚔", color: "#4ef0d0" },
+    tagline: "Builds tempo through electric strings and punishes panic escapes.",
   },
 ];
+
+const SHEET = { width: 832, height: 3456 };
+const FRONT_FRAME = { x: 18, y: 143, w: 28, h: 47 };
+const WALK_FRAMES = [
+  { x: 18, y: 655, w: 28, h: 47 },
+  { x: 82, y: 655, w: 28, h: 47 },
+  { x: 147, y: 655, w: 27, h: 48 },
+  { x: 82, y: 655, w: 28, h: 47 },
+];
+
+function buildSpriteStyle(characterId: string, scale: number, frame: { x: number; y: number; w: number; h: number }) {
+  return {
+    width: `${frame.w * scale}px`,
+    height: `${frame.h * scale}px`,
+    backgroundImage: `url(/assets/characters/${characterId}/atlas.png)`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: `-${frame.x * scale}px -${frame.y * scale}px`,
+    backgroundSize: `${SHEET.width * scale}px ${SHEET.height * scale}px`,
+    imageRendering: "pixelated" as const,
+  };
+}
 
 export default function RegisterPage() {
   const { isConnected, address } = useAccount();
 
   const [selectedCharacterId, setSelectedCharacterId] = useState(CHARACTER_PRESETS[0].id);
-  const [agentName, setAgentName] = useState("");
-  const [agentClass, setAgentClass] = useState(CHARACTER_PRESETS[0].defaultClass);
-  const [outfit, setOutfit] = useState(OUTFITS[0]);
-  const [voice, setVoice] = useState(VOICES[0]);
+  const [callSign, setCallSign] = useState("");
   const [metadataURI, setMetadataURI] = useState("ipfs://");
+  const [heroFrameIndex, setHeroFrameIndex] = useState(0);
 
   const { data: agentTxHash, writeContract: registerAgent, isPending: isRegPending } = useWriteContract();
   const { isLoading: isAgentConfirming, isSuccess: isAgentSuccess } = useWaitForTransactionReceipt({ hash: agentTxHash });
@@ -95,22 +194,29 @@ export default function RegisterPage() {
     [selectedCharacterId],
   );
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroFrameIndex((prev) => (prev + 1) % WALK_FRAMES.length);
+    }, 180);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   const handleCharacterSelect = (characterId: string) => {
-    const next = CHARACTER_PRESETS.find((entry) => entry.id === characterId);
     setSelectedCharacterId(characterId);
-    if (next) {
-      setAgentClass(next.defaultClass);
-    }
+    setHeroFrameIndex(0);
   };
 
+  const mintedName = callSign.trim() || selectedCharacter.name;
+
   const handleRegisterAgent = () => {
-    if (!address || !agentName.trim()) return;
+    if (!address || !mintedName.trim()) return;
 
     registerAgent({
       address: CONTRACTS.gameCore,
       abi: GameCoreABI,
       functionName: "registerAgent",
-      args: [address, agentName.trim(), agentClass, metadataURI],
+      args: [address, mintedName.trim(), metadataURI],
     });
   };
 
@@ -133,164 +239,133 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="page-container">
-      <h1 style={{ fontSize: 14, color: "var(--accent)", marginBottom: 6 }}>AVATAR FORGE</h1>
-      <p style={{ color: "var(--text-dim)", marginBottom: 20, fontSize: 16 }}>
-        &gt; Build your fighter like a character select lobby and mint your agent identity.
-      </p>
+    <div className="page-container recruit-v2-screen">
+      <section className="pixel-panel recruit-v2-shell">
+        <header className="recruit-v2-header">
+          <div>
+            <p className="recruit-v2-kicker">HALFKILO AGENT ARENA</p>
+            <h1 className="recruit-v2-title">NEON CONTRACT RECRUITMENT</h1>
+          </div>
+          <p className="recruit-v2-subtitle">Select a combatant, stamp a callsign, and lock your on-chain fighter.</p>
+        </header>
 
-      <div className="avatar-builder-grid">
-        <section className="pixel-panel avatar-roster-panel">
-          <h2 className="avatar-heading">CHARACTER SELECT</h2>
-          <p className="avatar-subtext">Pick a base fighter and then tune the loadout.</p>
+        <div className="recruit-v2-stage-grid">
+          <section className="pixel-panel-inset recruit-v2-portrait-panel">
+            <div className="recruit-v2-portrait-wrap">
+              <div className="recruit-v2-platform" />
+              <div
+                className="recruit-v2-portrait-sprite"
+                role="img"
+                aria-label={selectedCharacter.name}
+                style={buildSpriteStyle(selectedCharacter.id, 6, WALK_FRAMES[heroFrameIndex])}
+              />
+            </div>
+            <div className="recruit-v2-stage-readout">
+              <span>CLASS</span>
+              <strong>{selectedCharacter.classTier}</strong>
+              <span>STYLE</span>
+              <strong>{selectedCharacter.fightingStyle}</strong>
+            </div>
+          </section>
 
-          <div className="avatar-roster-grid">
+          <section className="pixel-panel recruit-v2-info-panel">
+            <div className="recruit-v2-name-block">
+              <p className="avatar-label">ACTIVE AGENT</p>
+              <h2>{selectedCharacter.name}</h2>
+              <span className="recruit-v2-codename">{selectedCharacter.codename}</span>
+            </div>
+
+            <div className="recruit-v2-stat-list">
+              <div className="recruit-v2-stat-row">
+                <span>STYLE</span>
+                <strong>{selectedCharacter.fightingStyle}</strong>
+              </div>
+              <div className="recruit-v2-stat-row">
+                <span>ORIGIN</span>
+                <strong>{selectedCharacter.origin}</strong>
+              </div>
+              <div className="recruit-v2-stat-row">
+                <span>TRAITS</span>
+                <strong>{selectedCharacter.traits.join(" / ")}</strong>
+              </div>
+              <div className="recruit-v2-stat-row">
+                <span>MOOD</span>
+                <strong style={{ color: selectedCharacter.mood.color }}>
+                  {selectedCharacter.mood.icon} {selectedCharacter.mood.label}
+                </strong>
+              </div>
+            </div>
+
+            <p className="recruit-v2-tagline">{selectedCharacter.tagline}</p>
+
+            <div className="recruit-v2-controls">
+              <div>
+                <label className="avatar-label">CALLSIGN</label>
+                <input
+                  className="pixel-input"
+                  value={callSign}
+                  placeholder={selectedCharacter.name}
+                  onChange={(e) => setCallSign(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="avatar-label">METADATA URI</label>
+                <input
+                  className="pixel-input"
+                  placeholder="ipfs://..."
+                  value={metadataURI}
+                  onChange={(e) => setMetadataURI(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="pixel-btn recruit-v2-btn"
+                onClick={handleRegisterAgent}
+                disabled={isRegPending || isAgentConfirming}
+              >
+                {isRegPending ? "CONFIRM IN WALLET..." : isAgentConfirming ? "RECRUITING..." : `RECRUIT ${mintedName.toUpperCase()}`}
+              </button>
+
+              {isAgentSuccess && (
+                <div className="tx-success">AGENT RECRUITED | TX: {agentTxHash?.slice(0, 16)}...</div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <section className="pixel-panel recruit-v2-roster-shell">
+          <div className="recruit-v2-roster-head">
+            <h3 className="avatar-heading">ROSTER GRID</h3>
+            <span>{CHARACTER_PRESETS.length} AGENTS ONLINE</span>
+          </div>
+          <div className="recruit-v2-roster-grid">
             {CHARACTER_PRESETS.map((character) => {
               const selected = selectedCharacter.id === character.id;
               return (
                 <button
                   key={character.id}
                   type="button"
-                  className={`avatar-roster-card ${selected ? "selected" : ""}`}
+                  className={`recruit-v2-thumb ${selected ? "selected" : ""}`}
                   onClick={() => handleCharacterSelect(character.id)}
                   aria-pressed={selected}
                 >
-                  <img
-                    src={`/assets/characters/${character.id}/atlas.png`}
-                    alt={character.name}
-                    className="avatar-roster-art"
+                  <div
+                    className="recruit-v2-thumb-art"
+                    style={buildSpriteStyle(character.id, 2, FRONT_FRAME)}
+                    role="img"
+                    aria-label={character.name}
                   />
-                  <div className="avatar-roster-copy">
+                  <div className="recruit-v2-thumb-copy">
                     <strong>{character.name}</strong>
-                    <span>{character.style}</span>
+                    <span>{character.classTier}</span>
                   </div>
                 </button>
               );
             })}
           </div>
         </section>
-
-        <section className="pixel-panel avatar-preview-panel">
-          <div className="avatar-preview-top">
-            <div>
-              <p className="avatar-label">ACTIVE AVATAR</p>
-              <h2 className="avatar-title">{selectedCharacter.name}</h2>
-              <p className="avatar-subtext">{selectedCharacter.style}</p>
-            </div>
-            <span className="rarity-badge rarity-rare">{agentClass}</span>
-          </div>
-
-          <div className="avatar-stage pixel-panel-inset">
-            <img
-              src={`/assets/characters/${selectedCharacter.id}/atlas.png`}
-              alt={selectedCharacter.name}
-              className="avatar-stage-art"
-            />
-          </div>
-
-          <p className="avatar-lore">{selectedCharacter.lore}</p>
-
-          <div className="avatar-metrics">
-            <div className="game-gauge">
-              <div className="gauge-value">{outfit}</div>
-              <div className="gauge-label">OUTFIT</div>
-            </div>
-            <div className="game-gauge">
-              <div className="gauge-value">{voice}</div>
-              <div className="gauge-label">VOICE</div>
-            </div>
-          </div>
-        </section>
-
-        <section className="pixel-panel avatar-build-panel">
-          <h2 className="avatar-heading">BUILD SETTINGS</h2>
-
-          <div className="avatar-form-stack">
-            <div>
-              <label className="avatar-label">AVATAR NAME</label>
-              <input
-                className="pixel-input"
-                placeholder="Shadow Knight..."
-                value={agentName}
-                onChange={(e) => setAgentName(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="avatar-label">CLASS</label>
-              <div className="avatar-chip-grid">
-                {CLASSES.map((entry) => (
-                  <button
-                    key={entry}
-                    type="button"
-                    className={`class-chip ${agentClass === entry ? "selected" : ""}`}
-                    onClick={() => setAgentClass(entry)}
-                  >
-                    {entry}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="avatar-label">OUTFIT</label>
-              <div className="avatar-chip-grid compact">
-                {OUTFITS.map((entry) => (
-                  <button
-                    key={entry}
-                    type="button"
-                    className={`class-chip ${outfit === entry ? "selected" : ""}`}
-                    onClick={() => setOutfit(entry)}
-                  >
-                    {entry}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="avatar-label">VOICE STYLE</label>
-              <div className="avatar-chip-grid compact">
-                {VOICES.map((entry) => (
-                  <button
-                    key={entry}
-                    type="button"
-                    className={`class-chip ${voice === entry ? "selected" : ""}`}
-                    onClick={() => setVoice(entry)}
-                  >
-                    {entry}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="avatar-label">METADATA URI</label>
-              <input
-                className="pixel-input"
-                placeholder="ipfs://..."
-                value={metadataURI}
-                onChange={(e) => setMetadataURI(e.target.value)}
-              />
-            </div>
-
-            <button
-              className="pixel-btn"
-              onClick={handleRegisterAgent}
-              disabled={isRegPending || isAgentConfirming || !agentName.trim()}
-              style={{ width: "100%", marginTop: 6 }}
-            >
-              {isRegPending ? "CONFIRM IN WALLET..." : isAgentConfirming ? "MINTING..." : "MINT AVATAR"}
-            </button>
-
-            {isAgentSuccess && (
-              <div className="tx-success">
-                AGENT RECRUITED | TX: {agentTxHash?.slice(0, 16)}...
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+      </section>
     </div>
   );
 }
