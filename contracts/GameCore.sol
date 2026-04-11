@@ -66,13 +66,12 @@ contract GameCore is Ownable {
         _itemPowers.push(45);
     }
 
-    /// @notice Register a new character – enforces 1 per wallet
+    /// @notice Register a new character. A wallet may recruit again to switch its active agent.
     function registerAgent(
         address to,
         string calldata name,
         string calldata metadataURI
-    ) external onlyOwner returns (uint256) {
-        require(!hasCharacter[to], "Wallet already has a character");
+    ) external returns (uint256) {
         uint256 agentId = agentNFT.mint(to, name);
         identityRegistry.registerIdentity(agentId, name, metadataURI);
         reputationRegistry.initReputation(agentId);

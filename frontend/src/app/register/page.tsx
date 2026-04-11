@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useChainId, useReadContract } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { CONTRACTS } from "@/config/contracts";
 import { GameCoreABI } from "@/config/abis";
@@ -180,14 +180,25 @@ function buildSpriteStyle(characterId: string, scale: number, frame: { x: number
 
 export default function RegisterPage() {
   const { isConnected, address } = useAccount();
+  const chainId = useChainId();
+  const publicClient = usePublicClient();
 
   const [selectedCharacterId, setSelectedCharacterId] = useState(CHARACTER_PRESETS[0].id);
   const [callSign, setCallSign] = useState("");
   const [metadataURI, setMetadataURI] = useState("ipfs://");
   const [heroFrameIndex, setHeroFrameIndex] = useState(0);
+  const [contractsReady, setContractsReady] = useState<boolean | null>(null);
+  const [preflightError, setPreflightError] = useState<string | null>(null);
 
-  const { data: agentTxHash, writeContract: registerAgent, isPending: isRegPending } = useWriteContract();
+  const { data: agentTxHash, writeContract: registerAgent, isPending: isRegPending, error: regError } = useWriteContract();
   const { isLoading: isAgentConfirming, isSuccess: isAgentSuccess } = useWaitForTransactionReceipt({ hash: agentTxHash });
+  const { data: hasCharacter } = useReadContract({
+    address: CONTRACTS.gameCore,
+    abi: GameCoreABI,
+    functionName: "hasCharacter",
+    args: address ? [address] : undefined,
+    query: { enabled: contractsReady === true && !!address },
+  });
 
   const selectedCharacter = useMemo(
     () => CHARACTER_PRESETS.find((entry) => entry.id === selectedCharacterId) ?? CHARACTER_PRESETS[0],
@@ -202,22 +213,85 @@ export default function RegisterPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!isAgentSuccess || !address) return;
+
+    const walletKey = address.toLowerCase();
+    window.localStorage.setItem(`recruitAtlasByWallet:${walletKey}`, selectedCharacter.id);
+  }, [isAgentSuccess, address, selectedCharacter.id]);
+
+  useEffect(() => {
+    let active = true;
+
+    const checkContracts = async () => {
+      if (!publicClient || !CONTRACTS.agentNFT || !CONTRACTS.gameCore) {
+        if (active) setContractsReady(false);
+        return;
+      }
+
+      try {
+        const [agentCode, coreCode] = await Promise.all([
+          publicClient.getCode({ address: CONTRACTS.agentNFT }),
+          publicClient.getCode({ address: CONTRACTS.gameCore }),
+        ]);
+
+        if (!active) return;
+        setContractsReady(Boolean(agentCode && agentCode !== "0x") && Boolean(coreCode && coreCode !== "0x"));
+      } catch {
+        if (active) setContractsReady(false);
+      }
+    };
+
+    checkContracts();
+    return () => {
+      active = false;
+    };
+  }, [publicClient, chainId]);
+
   const handleCharacterSelect = (characterId: string) => {
     setSelectedCharacterId(characterId);
     setHeroFrameIndex(0);
   };
 
   const mintedName = callSign.trim() || selectedCharacter.name;
+  const hasExistingCharacter = Boolean(hasCharacter as boolean | undefined);
+  const recruitDisabled = isRegPending || isAgentConfirming || contractsReady === false;
+  const readableRegError =
+    (regError as { shortMessage?: string; message?: string } | null)?.shortMessage ||
+    (regError as { shortMessage?: string; message?: string } | null)?.message ||
+    null;
 
-  const handleRegisterAgent = () => {
+  const handleRegisterAgent = async () => {
     if (!address || !mintedName.trim()) return;
 
-    registerAgent({
+    setPreflightError(null);
+
+    const request = {
       address: CONTRACTS.gameCore,
       abi: GameCoreABI,
-      functionName: "registerAgent",
-      args: [address, mintedName.trim(), metadataURI],
-    });
+      functionName: "registerAgent" as const,
+      args: [address, mintedName.trim(), metadataURI] as const,
+    };
+
+    try {
+      if (publicClient) {
+        const simulation = await publicClient.simulateContract({
+          ...request,
+          account: address,
+        });
+
+        registerAgent(simulation.request);
+        return;
+      }
+
+      registerAgent(request);
+    } catch (err) {
+      const msg =
+        (err as { shortMessage?: string; message?: string })?.shortMessage ||
+        (err as { shortMessage?: string; message?: string })?.message ||
+        "Simulation failed before send.";
+      setPreflightError(msg);
+    }
   };
 
   if (!isConnected) {
@@ -321,11 +395,32 @@ export default function RegisterPage() {
 
               <button
                 className="pixel-btn recruit-v2-btn"
-                onClick={handleRegisterAgent}
-                disabled={isRegPending || isAgentConfirming}
+                onClick={() => void handleRegisterAgent()}
+                disabled={recruitDisabled}
               >
-                {isRegPending ? "CONFIRM IN WALLET..." : isAgentConfirming ? "RECRUITING..." : `RECRUIT ${mintedName.toUpperCase()}`}
+                {isRegPending
+                  ? "CONFIRM IN WALLET..."
+                  : isAgentConfirming
+                    ? "UPDATING AGENT..."
+                    : hasExistingCharacter
+                      ? `CHANGE TO ${mintedName.toUpperCase()}`
+                      : `RECRUIT ${mintedName.toUpperCase()}`}
               </button>
+
+              {contractsReady === false && (
+                <div className="tx-error">
+                  CONTRACTS NOT DEPLOYED ON CHAIN {chainId}. SWITCH NETWORK OR UPDATE FRONTEND CONTRACT ADDRESSES.
+                </div>
+              )}
+
+              {hasExistingCharacter && contractsReady === true && (
+                <div className="tx-success">
+                  YOU ALREADY HAVE A RECRUITED AGENT. PICK A NEW PRESET AND CLICK CHANGE TO SWITCH YOUR ACTIVE AGENT.
+                </div>
+              )}
+
+              {readableRegError && <div className="tx-error">TX ERROR: {readableRegError}</div>}
+              {preflightError && <div className="tx-error">SIMULATION ERROR: {preflightError}</div>}
 
               {isAgentSuccess && (
                 <div className="tx-success">AGENT RECRUITED | TX: {agentTxHash?.slice(0, 16)}...</div>

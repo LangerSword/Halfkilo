@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from "wagmi";
+import { useState, useEffect } from "react";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useReadContract } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { CONTRACTS } from "@/config/contracts";
 import { AgentNFTABI, GameCoreABI } from "@/config/abis";
@@ -9,114 +9,53 @@ import { AgentNFTABI, GameCoreABI } from "@/config/abis";
 const PLAYER_AGENT_ID = BigInt(1);
 const AI_AGENT_ID = BigInt(2);
 const ONLINE_OPPONENT_AGENT_ID = BigInt(3);
-const LOOKBACK_LIMIT = 240;
+const SHEET = { width: 832, height: 3456 };
+const FRONT_FRAME = { x: 18, y: 143, w: 28, h: 47 };
 
-const NAME_TO_ATLAS: Record<string, string> = {
-    "vex rail": "sophia",
-    "kaze-9": "ada",
-    "mira static": "turing",
-    "brax ironjaw": "socrates",
-    "nyx fang": "aristotle",
-    "rune halo": "descartes",
-    "tanka-0": "plato",
-    "lexi quill": "leibniz",
-    "ordo blacksite": "dennett",
-    "mother rust": "paul",
-    "chimera jax": "searle",
-    "saint volt": "chomsky",
-};
+function buildSpriteStyle(characterId: string) {
+    return {
+        width: `${FRONT_FRAME.w * 1.15}px`,
+        height: `${FRONT_FRAME.h * 1.15}px`,
+        backgroundImage: `url(/assets/characters/${characterId}/atlas.png)`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: `-${FRONT_FRAME.x * 1.15}px -${FRONT_FRAME.y * 1.15}px`,
+        backgroundSize: `${SHEET.width * 1.15}px ${SHEET.height * 1.15}px`,
+        imageRendering: "pixelated" as const,
+    };
+}
 
 export default function BattlePage() {
     const { isConnected, address } = useAccount();
+    const publicClient = usePublicClient();
     const [isBattling, setIsBattling] = useState(false);
     const [gameMode, setGameMode] = useState<"ai" | "online">("ai");
-    const [selectedAgentId, setSelectedAgentId] = useState<bigint | null>(null);
+    const [aiAgentIdInput, setAiAgentIdInput] = useState(AI_AGENT_ID.toString());
+    const [battleInputError, setBattleInputError] = useState<string | null>(null);
+    const [playerAtlas, setPlayerAtlas] = useState("sophia");
 
     const { data: battleTxHash, writeContract: doBattle, isPending: isBattlePending } = useWriteContract();
-
-    const { isLoading: isBattleConfirming, isSuccess: isBattleSuccess } = useWaitForTransactionReceipt({ hash: battleTxHash });
-
-    const { data: hasCharacter } = useReadContract({
-        address: CONTRACTS.gameCore,
-        abi: GameCoreABI,
-        functionName: "hasCharacter",
-        args: address ? [address] : undefined,
-        query: { enabled: !!address },
-    });
-
-    const { data: mappedCharacterId } = useReadContract({
+    const { data: characterOfData } = useReadContract({
         address: CONTRACTS.gameCore,
         abi: GameCoreABI,
         functionName: "characterOf",
         args: address ? [address] : undefined,
-        query: { enabled: !!address },
+        query: { enabled: !!address && !!CONTRACTS.gameCore },
     });
 
-    const hasCharacterBool = Boolean(hasCharacter as boolean | undefined);
-    const mappedCharacterIdValue = (mappedCharacterId as bigint | undefined) ?? BigInt(0);
-
-    const { data: totalSupply } = useReadContract({
-        address: CONTRACTS.agentNFT,
-        abi: AgentNFTABI,
-        functionName: "totalSupply",
-        query: { enabled: !!CONTRACTS.agentNFT && !!address },
-    });
-
-    const candidateAgentIds = useMemo(() => {
-        const total = Number(totalSupply ?? BigInt(0));
-        if (!Number.isFinite(total) || total <= 0) return [] as bigint[];
-
-        const start = Math.max(1, total - LOOKBACK_LIMIT + 1);
-        const ids: bigint[] = [];
-        for (let i = total; i >= start; i--) {
-            ids.push(BigInt(i));
-        }
-        return ids;
-    }, [totalSupply]);
-
-    const { data: ownerChecks } = useReadContracts({
-        contracts: candidateAgentIds.map((id) => ({
-            address: CONTRACTS.agentNFT,
-            abi: AgentNFTABI,
-            functionName: "ownerOf",
-            args: [id],
-        })),
-        query: { enabled: !!address && candidateAgentIds.length > 0 },
-    });
-
-    const ownedAgentIds = useMemo(() => {
-        if (hasCharacterBool && mappedCharacterIdValue > BigInt(0)) {
-            return [mappedCharacterIdValue];
-        }
-
-        if (!address || !ownerChecks?.length) return [] as bigint[];
-        const normalized = address.toLowerCase();
-
-        return candidateAgentIds.filter((id, index) => {
-            const row = ownerChecks[index] as { status?: string; result?: unknown } | undefined;
-            return row?.status === "success" && typeof row.result === "string" && row.result.toLowerCase() === normalized;
-        });
-    }, [address, candidateAgentIds, ownerChecks, hasCharacterBool, mappedCharacterIdValue]);
+    const { isLoading: isBattleConfirming, isSuccess: isBattleSuccess } = useWaitForTransactionReceipt({ hash: battleTxHash });
+    const activePlayerAgentId = (characterOfData as bigint | undefined) && (characterOfData as bigint | undefined)! > BigInt(0)
+        ? (characterOfData as bigint)
+        : PLAYER_AGENT_ID;
 
     useEffect(() => {
-        if (!ownedAgentIds.length) return;
-        if (selectedAgentId && ownedAgentIds.some((id) => id === selectedAgentId)) return;
-        setSelectedAgentId(ownedAgentIds[0]);
-    }, [ownedAgentIds, selectedAgentId]);
+        if (!address || typeof window === "undefined") {
+            setPlayerAtlas("sophia");
+            return;
+        }
 
-    const activeAgentId = selectedAgentId ?? ownedAgentIds[0] ?? PLAYER_AGENT_ID;
-
-    const { data: activeAgentData } = useReadContract({
-        address: CONTRACTS.agentNFT,
-        abi: AgentNFTABI,
-        functionName: "getAgent",
-        args: [activeAgentId],
-        query: { enabled: !!CONTRACTS.agentNFT && !!activeAgentId },
-    });
-
-    const activeAgentName = (activeAgentData?.[0] as string | undefined) || `Agent ${activeAgentId.toString()}`;
-    const activeAgentLevel = (activeAgentData?.[1] as bigint | undefined) || BigInt(1);
-    const activeAgentAtlas = NAME_TO_ATLAS[activeAgentName.toLowerCase()] || "sophia";
+        const savedAtlas = window.localStorage.getItem(`recruitAtlasByWallet:${address.toLowerCase()}`);
+        setPlayerAtlas(savedAtlas || "sophia");
+    }, [address]);
 
     useEffect(() => {
         const handleBattleEnd = () => setIsBattling(false);
@@ -125,35 +64,96 @@ export default function BattlePage() {
     }, []);
 
     useEffect(() => {
+        let active = true;
+
+        const autoSelectLatestAiAgent = async () => {
+            if (!publicClient || !CONTRACTS.agentNFT || !CONTRACTS.gameCore) return;
+
+            try {
+                const latestAgentId = await publicClient.readContract({
+                    address: CONTRACTS.agentNFT,
+                    abi: AgentNFTABI,
+                    functionName: "totalSupply",
+                });
+
+                let probeId = latestAgentId;
+                while (probeId > BigInt(0)) {
+                    const isRegistered = await publicClient.readContract({
+                        address: CONTRACTS.gameCore,
+                        abi: GameCoreABI,
+                        functionName: "registered",
+                        args: [probeId],
+                    });
+
+                    if (isRegistered && probeId !== activePlayerAgentId) {
+                        if (!active) return;
+                        setAiAgentIdInput(probeId.toString());
+                        setBattleInputError(null);
+                        return;
+                    }
+
+                    probeId -= BigInt(1);
+                }
+
+                if (!active) return;
+                setBattleInputError("NO DEPLOYED AI AGENT FOUND YET");
+            } catch {
+                if (!active) return;
+                setBattleInputError("FAILED TO AUTO-LOAD LATEST AI AGENT");
+            }
+        };
+
+        autoSelectLatestAiAgent();
+        return () => {
+            active = false;
+        };
+    }, [publicClient, isConnected, activePlayerAgentId]);
+
+    useEffect(() => {
         if (isBattleSuccess) {
             const opponentName = gameMode === "online" ? "Online Player" : "AI Agent";
-            const opponentAtlas = gameMode === "online" ? "aristotle" : "socrates";
-
             setIsBattling(true);
             window.dispatchEvent(new CustomEvent('START_BATTLE', {
                 detail: {
-                    agentAName: activeAgentName,
+                    agentAName: "You",
                     petAName: "Your Pet",
                     agentBName: opponentName,
                     petBName: gameMode === "online" ? "Opponent Pet" : "CPU Pet",
-                    p1Atlas: activeAgentAtlas,
-                    p2Atlas: opponentAtlas,
+                    p1Atlas: playerAtlas,
+                    p2Atlas: gameMode === "online" ? "aristotle" : "aristotle",
                     winnerIsA: true,
                     gameMode: gameMode
                 }
             }));
         }
-    }, [isBattleSuccess, gameMode, activeAgentName, activeAgentAtlas]);
+    }, [isBattleSuccess, gameMode, playerAtlas]);
 
     const handleBattle = () => {
-        const enemyAgentId = gameMode === "online" ? ONLINE_OPPONENT_AGENT_ID : AI_AGENT_ID;
-        const playerAgentId = activeAgentId;
+        let enemyAgentId = ONLINE_OPPONENT_AGENT_ID;
+
+        if (gameMode === "ai") {
+            const normalized = aiAgentIdInput.trim();
+            if (!/^\d+$/.test(normalized) || normalized === "0") {
+                setBattleInputError("ENTER A VALID AI AGENT ID (> 0)");
+                return;
+            }
+
+            const parsedAiId = BigInt(normalized);
+            if (parsedAiId === activePlayerAgentId) {
+                setBattleInputError("AI AGENT ID MUST BE DIFFERENT FROM YOUR AGENT ID");
+                return;
+            }
+
+            enemyAgentId = parsedAiId;
+        }
+
+        setBattleInputError(null);
 
         doBattle({
             address: CONTRACTS.gameCore,
             abi: GameCoreABI,
             functionName: "battle",
-            args: [playerAgentId, enemyAgentId],
+            args: [activePlayerAgentId, enemyAgentId],
         });
     };
 
@@ -187,39 +187,23 @@ export default function BattlePage() {
                             </h2>
 
                             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                <div>
-                                    <label style={{ fontFamily: "'Press Start 2P', cursive", fontSize: 7, color: "var(--text-dim)", display: "block", marginBottom: 6 }}>
-                                        YOUR MINTED AGENT
-                                    </label>
-                                    <select
-                                        className="pixel-input"
-                                        value={activeAgentId.toString()}
-                                        onChange={(e) => setSelectedAgentId(BigInt(e.target.value))}
-                                        disabled={ownedAgentIds.length === 0}
-                                    >
-                                        {ownedAgentIds.length === 0 ? (
-                                            <option value={PLAYER_AGENT_ID.toString()}>No owned agents found (fallback #{PLAYER_AGENT_ID.toString()})</option>
-                                        ) : (
-                                            ownedAgentIds.map((id) => (
-                                                <option key={id.toString()} value={id.toString()}>
-                                                    #{id.toString()}
-                                                </option>
-                                            ))
-                                        )}
-                                    </select>
-                                    <p style={{ color: "var(--text-dim)", fontSize: 14, marginTop: 6 }}>
-                                        Active: {activeAgentName} (LVL {activeAgentLevel.toString()})
-                                    </p>
-                                </div>
-
                                 {/* Battle Visualization */}
                                 <div className="pixel-panel-inset" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 24, padding: 20 }}>
                                     <div style={{ textAlign: "center" }}>
-                                        <div className="inv-slot filled" style={{ width: 56, height: 56, margin: "0 auto 6px" }}>
-                                            <span style={{ fontSize: 28 }}>🤖</span>
+                                        <div className="inv-slot filled" style={{ width: 56, height: 56, margin: "0 auto 6px", overflow: "hidden" }}>
+                                            <div
+                                                role="img"
+                                                aria-label="Your recruited agent"
+                                                style={{
+                                                    ...buildSpriteStyle(playerAtlas),
+                                                    maxWidth: "100%",
+                                                    maxHeight: "100%",
+                                                    transformOrigin: "center center",
+                                                }}
+                                            />
                                         </div>
                                         <span style={{ fontFamily: "'Press Start 2P', cursive", fontSize: 7, color: "var(--text-dim)" }}>
-                                            {activeAgentName.toUpperCase()}
+                                            YOU
                                         </span>
                                     </div>
 
@@ -240,13 +224,47 @@ export default function BattlePage() {
                                         GAME MODE
                                     </label>
                                     <div className="grid grid-cols-2 gap-2 mb-4">
-                                        <button className={`pixel-btn ${gameMode === 'ai' ? 'selected' : ''}`} style={{ fontSize: 8, padding: 8 }} onClick={() => setGameMode('ai')}>
+                                        <button
+                                            className={`pixel-btn ${gameMode === 'ai' ? 'selected' : ''}`}
+                                            style={{ fontSize: 8, padding: 8 }}
+                                            onClick={() => {
+                                                setGameMode('ai');
+                                                setBattleInputError(null);
+                                            }}
+                                        >
                                             ⚔ FIGHT VS AI AGENT
                                         </button>
-                                        <button className={`pixel-btn ${gameMode === 'online' ? 'selected' : ''}`} style={{ fontSize: 8, padding: 8, borderColor: gameMode === 'online' ? 'var(--accent)' : 'inherit' }} onClick={() => setGameMode('online')}>
+                                        <button
+                                            className={`pixel-btn ${gameMode === 'online' ? 'selected' : ''}`}
+                                            style={{ fontSize: 8, padding: 8, borderColor: gameMode === 'online' ? 'var(--accent)' : 'inherit' }}
+                                            onClick={() => {
+                                                setGameMode('online');
+                                                setBattleInputError(null);
+                                            }}
+                                        >
                                             🌐 FIGHT ONLINE PLAYER
                                         </button>
                                     </div>
+
+                                    {gameMode === "ai" && (
+                                        <div>
+                                            <label style={{ fontFamily: "'Press Start 2P', cursive", fontSize: 7, color: "var(--text-dim)", display: "block", marginBottom: 6 }}>
+                                                AI AGENT ID
+                                            </label>
+                                            <input
+                                                className="pixel-input"
+                                                type="number"
+                                                min="1"
+                                                step="1"
+                                                value={aiAgentIdInput}
+                                                onChange={(e) => {
+                                                    setAiAgentIdInput(e.target.value);
+                                                    if (battleInputError) setBattleInputError(null);
+                                                }}
+                                                placeholder="2"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button
@@ -261,6 +279,12 @@ export default function BattlePage() {
                                 {isBattleSuccess && (
                                     <div className="tx-success">
                                         ✓ BATTLE RESOLVED | CHECK LOOT IN INVENTORY
+                                    </div>
+                                )}
+
+                                {battleInputError && (
+                                    <div className="tx-error">
+                                        {battleInputError}
                                     </div>
                                 )}
                             </div>

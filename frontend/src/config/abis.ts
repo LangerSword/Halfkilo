@@ -8,6 +8,7 @@ export const GameCoreABI = [
     { type: "function", name: "assignedPet", inputs: [{ name: "", type: "uint256" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
     { type: "function", name: "hasCharacter", inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "bool" }], stateMutability: "view" },
     { type: "function", name: "characterOf", inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+    { type: "function", name: "owner", inputs: [], outputs: [{ name: "", type: "address" }], stateMutability: "view" },
     { type: "event", name: "AgentRegistered", inputs: [{ name: "agentId", type: "uint256", indexed: true }, { name: "owner", type: "address", indexed: true }] },
     { type: "event", name: "PetAssigned", inputs: [{ name: "agentId", type: "uint256", indexed: true }, { name: "petId", type: "uint256", indexed: true }] },
     { type: "event", name: "BattleResolved", inputs: [{ name: "agentA", type: "uint256", indexed: true }, { name: "agentB", type: "uint256", indexed: true }, { name: "winner", type: "uint256" }, { name: "lootId", type: "uint256" }] },
