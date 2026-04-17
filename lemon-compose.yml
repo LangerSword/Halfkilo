@@ -21,7 +21,16 @@ services:
       - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      # Required for PR creation (optional if not needed)
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+      - GITHUB_REF=${GITHUB_REF}
+      - GITHUB_SHA=${GITHUB_SHA}
+      # Logging / Debugging (enabled by default)
+      - VERBOSE=${VERBOSE:-true}
+      - DEBUG=${DEBUG:-false}
     stop_grace_period: 5s
 
 volumes:
-  redis_data: 
+  redis_data:
+
