@@ -12,7 +12,7 @@ services:
       retries: 5
 
   lemon:
-    image: delcagox/lemonx:latest
+    image: ghcr.io/langersword/lemonx:latest
     depends_on:
       redis:
         condition: service_healthy
@@ -21,16 +21,14 @@ services:
       - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      # Required for PR creation (optional if not needed)
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
       - GITHUB_REF=${GITHUB_REF}
       - GITHUB_SHA=${GITHUB_SHA}
-      # Logging / Debugging (enabled by default)
-      - VERBOSE=${VERBOSE:-true}
-      - DEBUG=${DEBUG:-false}
+      - TARGET_REPO=/workspace
+    volumes:
+      - .:/workspace
     stop_grace_period: 5s
 
 volumes:
   redis_data:
-
